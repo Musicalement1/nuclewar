@@ -1413,7 +1413,6 @@ function fuseAtoms(a, b) {
         const dx = b.x - a.x;
         const dy = b.y - a.y;
         const dist = Math.hypot(dx, dy);
-        if (dist === 0) continue;
   
         const radiusA = (a instanceof Atom) ? a.baseRadius : a.radius;
         const radiusB = (b instanceof Atom) ? b.baseRadius : b.radius;
