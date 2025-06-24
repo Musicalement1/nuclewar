@@ -1,3 +1,56 @@
+/*function estimerDemiVie(isotope) {
+  const Z = isotope.protons.length;
+  const N = isotope.neutrons.length;
+  const A = Z + N;
+  const ratioNZ = N / Z;
+
+  let typeDesintegration = "";
+  let demiVieEstimee = 0; // en secondes
+
+  // Désintégration alpha (Z > 82)
+  if (Z > 82) {
+    typeDesintegration = "alpha";
+    const E_alpha = 4.5; // MeV (valeur typique)
+    const A_Z = 28.9;
+    const B_Z = 1.60;
+    const log10_t = A_Z / Math.sqrt(E_alpha) + B_Z;
+    demiVieEstimee = Math.pow(10, log10_t);
+  }
+  // Désintégration bêta moins (excès de neutrons)
+  else if (ratioNZ > 1.5) {
+    typeDesintegration = "bêta⁻";
+    const Q = 5.0; // MeV (valeur typique)
+    const a = 1.0;
+    const b = -1.0;
+    const c = 5.0;
+    const log10_t = a * Z + b * Math.log10(Q) + c;
+    demiVieEstimee = Math.pow(10, log10_t);
+  }
+  // Désintégration bêta plus ou capture électronique (excès de protons)
+  else if (ratioNZ < 1) {
+    typeDesintegration = "bêta⁺ / capture électronique";
+    const Q = 5.0; // MeV (valeur typique)
+    const a = 1.0;
+    const b = -1.0;
+    const c = 5.0;
+    const log10_t = a * Z + b * Math.log10(Q) + c;
+    demiVieEstimee = Math.pow(10, log10_t);
+  }
+  // Noyau stable ou quasi-stable
+  else if (Math.abs(N - Z) <= 1) {
+    typeDesintegration = "stable ou quasi-stable";
+    demiVieEstimee = Math.pow(10, 20); // quasi infini (~âge de l'univers)
+  }
+  // Autres cas
+  else {
+    typeDesintegration = "désintégration incertaine";
+    demiVieEstimee = Math.pow(10, 3); // estimation très large
+  }
+
+  return [typeDesintegration, demiVieEstimee]; // [mode, demi-vie en secondes]
+}
+*/
+
 const canvas = document.getElementById('canvas');
 const ctx = canvas.getContext('2d');
 
@@ -61,7 +114,7 @@ const ELEMENTS = {
     40: { name: "Zirconium",       symbol: "Zr", color: "#2E8B57", valenceMax: 4 },
     41: { name: "Niobium",         symbol: "Nb", color: "#8FBC8F", valenceMax: 5 },
     42: { name: "Molybdenum",      symbol: "Mo", color: "#00CED1", valenceMax: 6 },
-    43: { name: "Technetium",      symbol: "Tc", color: "#A9A9A9", valenceMax: 7 },
+    43: { name: "Technetium",      symbol: "Tc", color: "#ac94a8", valenceMax: 7 },
     44: { name: "Ruthenium",       symbol: "Ru", color: "#778899", valenceMax: 4 },
     45: { name: "Rhodium",         symbol: "Rh", color: "#C0C0C0", valenceMax: 3 },
     46: { name: "Palladium",       symbol: "Pd", color: "#D3D3D3", valenceMax: 2 },
@@ -79,12 +132,12 @@ const ELEMENTS = {
     58: { name: "Cerium",          symbol: "Ce", color: "#FFE4C4", valenceMax: 3 },
     59: { name: "Praseodymium",    symbol: "Pr", color: "#FFB347", valenceMax: 3 },
     60: { name: "Neodymium",       symbol: "Nd", color: "#FFB6C1", valenceMax: 3 },
-    61: { name: "Promethium",      symbol: "Pm", color: "#FFC0CB", valenceMax: 3 },
+    61: { name: "Promethium",      symbol: "Pm", color: "#baffb9", valenceMax: 3 },
     62: { name: "Samarium",        symbol: "Sm", color: "#FF69B4", valenceMax: 3 },
     63: { name: "Europium",        symbol: "Eu", color: "#FF1493", valenceMax: 3 },
     64: { name: "Gadolinium",      symbol: "Gd", color: "#FF6347", valenceMax: 3 },
     65: { name: "Terbium",         symbol: "Tb", color: "#FF4500", valenceMax: 3 },
-    66: { name: "Dysprosium",      symbol: "Dy", color: "#FF8C00", valenceMax: 3 },
+    66: { name: "Dysprosium",      symbol: "Dy", color: "#ff7800", valenceMax: 3 },
     67: { name: "Holmium",         symbol: "Ho", color: "#FFA500", valenceMax: 3 },
     68: { name: "Erbium",          symbol: "Er", color: "#FFD700", valenceMax: 3 },
     69: { name: "Thulium",         symbol: "Tm", color: "#FFFF00", valenceMax: 3 },
@@ -99,20 +152,20 @@ const ELEMENTS = {
     78: { name: "Platinum",        symbol: "Pt", color: "#6495ED", valenceMax: 2 },
     79: { name: "Gold",            symbol: "Au", color: "#FFD700", valenceMax: 1 },
     80: { name: "Mercury",         symbol: "Hg", color: "#DAA520", valenceMax: 2 },
-    81: { name: "Thallium",        symbol: "Tl", color: "#B8860B", valenceMax: 3 },
+    81: { name: "Thallium",        symbol: "Tl", color: "#dbc182", valenceMax: 3 },
     82: { name: "Lead",            symbol: "Pb", color: "#A0522D", valenceMax: 4 },
     83: { name: "Bismuth",         symbol: "Bi", color: "#8B4513", valenceMax: 3 },
     84: { name: "Polonium",        symbol: "Po", color: "#D2691E", valenceMax: 2 },
     85: { name: "Astatine",        symbol: "At", color: "#CD853F", valenceMax: 1 },
     86: { name: "Radon",           symbol: "Rn", color: "#7B68EE", valenceMax: 0 },
-    87: { name: "Francium",        symbol: "Fr", color: "#FF0000", valenceMax: 1 },
+    87: { name: "Francium",        symbol: "Fr", color: "#cd5050", valenceMax: 1 },
     88: { name: "Radium",          symbol: "Ra", color: "#FF7F50", valenceMax: 2 },
     89: { name: "Actinium",        symbol: "Ac", color: "#FF4500", valenceMax: 3 },
     90: { name: "Thorium",         symbol: "Th", color: "#FFA07A", valenceMax: 4 },
     91:  { name: "Protactinium",    symbol: "Pa", color: "#FF6347", valenceMax: 5 },
-    92:  { name: "Uranium",         symbol: "U",  color: "#FF4500", valenceMax: 6 },
+    92:  { name: "Uranium",         symbol: "U",  color: "#63ff53"/*"#FF4500"*/, valenceMax: 6 },
     93:  { name: "Neptunium",       symbol: "Np", color: "#FF7F50", valenceMax: 5 },
-    94:  { name: "Plutonium",       symbol: "Pu", color: "#FF8C00", valenceMax: 6 },
+    94:  { name: "Plutonium",       symbol: "Pu", color: "#8f76ff"/*"#FF8C00"*/, valenceMax: 6 },
     95:  { name: "Americium",       symbol: "Am", color: "#FFA500", valenceMax: 3 },
     96:  { name: "Curium",          symbol: "Cm", color: "#FFD700", valenceMax: 3 },
     97:  { name: "Berkelium",       symbol: "Bk", color: "#FFFF00", valenceMax: 3 },
@@ -156,181 +209,6 @@ const ELEMENTS = {
     111: [8], 112: [2], 113: [1, 3], 114: [2, 4], 115: [1, 3], 116: [2, 4],
     117: [1, 3, 5, 7], 118: [0]
   };*/
-/*// Demi-vie en millisecondes (exemple, ajuster selon sources fiables)
-const ISOTOPES_DATA = [
-// Hydrogène (Z=1)
-{ Z: 1, N: 0, halfLife: Infinity, decayModes: {} },                         // ¹H stable
-{ Z: 1, N: 1, halfLife: Infinity, decayModes: {} },                         // ²H stable
-{ Z: 1, N: 2, halfLife: 3.887e11, decayModes: { betaMinus: 1 } },           // ³H (Tritium)
-{ Z: 1, N: 3, halfLife: 1.776, decayModes: { betaMinus: 1 } },              // ⁴H
-{ Z: 1, N: 4, halfLife: 0.03, decayModes: { betaMinus: 1 } },               // ⁵H
-{ Z: 1, N: 5, halfLife: 0.002, decayModes: { neutronEmission: 1 } },        // ⁶H
-{ Z: 1, N: 6, halfLife: 0.0005, decayModes: { neutronEmission: 1 } },       // ⁷H
-{ Z: 1, N: -1, halfLife: 0.0001, decayModes: { protonEmission: 1 } },       // Hypothétique isotope ultra-protoné (¹H with N=-1) (pour équilibrer)
-{ Z: 1, N: -2, halfLife: 0.00005, decayModes: { protonEmission: 1 } },      // idem
-
-// Hélium (Z=2)
-{ Z: 2, N: 0, halfLife: 0.0000000000012, decayModes: { protonEmission: 1 } }, // ²He
-{ Z: 2, N: 1, halfLife: 1.2e-21, decayModes: { protonEmission: 1 } },        // ³He rare instable
-{ Z: 2, N: 2, halfLife: Infinity, decayModes: {} },                          // ⁴He stable
-{ Z: 2, N: 3, halfLife: 7.4e-22, decayModes: { neutronEmission: 1 } },       // ⁵He
-{ Z: 2, N: 4, halfLife: 6.7e-22, decayModes: { neutronEmission: 1 } },       // ⁶He
-{ Z: 2, N: 5, halfLife: 0.8, decayModes: { betaMinus: 1 } },                 // ⁷He
-{ Z: 2, N: 6, halfLife: 1e-21, decayModes: { neutronEmission: 1 } },         // ⁸He
-{ Z: 2, N: 7, halfLife: 0.0005, decayModes: { neutronEmission: 1 } },        // ⁹He
-{ Z: 2, N: -1, halfLife: 0.000001, decayModes: { protonEmission: 1 } },      // Hypothétique ¹He
-
-// Lithium (Z=3)
-{ Z: 3, N: 1, halfLife: 0.001, decayModes: { protonEmission: 1 } },          // ⁴Li
-{ Z: 3, N: 2, halfLife: Infinity, decayModes: {} },                          // ⁵Li (not vraiment stable mais très court)
-{ Z: 3, N: 3, halfLife: Infinity, decayModes: {} },                          // ⁶Li stable
-{ Z: 3, N: 4, halfLife: Infinity, decayModes: {} },                          // ⁷Li stable
-{ Z: 3, N: 5, halfLife: 8.04, decayModes: { betaMinus: 1 } },                // ⁸Li
-{ Z: 3, N: 6, halfLife: 0.839, decayModes: { betaMinus: 1 } },               // ⁹Li
-{ Z: 3, N: 7, halfLife: 0.178, decayModes: { betaMinus: 1 } },               // ¹⁰Li
-{ Z: 3, N: 8, halfLife: 0.0007, decayModes: { neutronEmission: 1 } },        // ¹¹Li
-{ Z: 3, N: 9, halfLife: 0.0002, decayModes: { neutronEmission: 1 } },        // ¹²Li
-
-// Béryllium (Z=4)
-{ Z: 4, N: 2, halfLife: 0.000000005, decayModes: { protonEmission: 1 } },    // ⁶Be
-{ Z: 4, N: 3, halfLife: 4.6e6, decayModes: { electronCapture: 1 } },         // ⁷Be
-{ Z: 4, N: 4, halfLife: 6.7e-17, decayModes: { alpha: 1 } },                 // ⁸Be
-{ Z: 4, N: 5, halfLife: Infinity, decayModes: {} },                          // ⁹Be stable
-{ Z: 4, N: 6, halfLife: 1.39, decayModes: { betaMinus: 1 } },                // ¹⁰Be
-{ Z: 4, N: 7, halfLife: 0.00094, decayModes: { betaMinus: 1 } },             // ¹¹Be
-{ Z: 4, N: 8, halfLife: 0.0002, decayModes: { neutronEmission: 1 } },        // ¹²Be
-{ Z: 4, N: 9, halfLife: 0.0001, decayModes: { neutronEmission: 1 } },        // ¹³Be
-{ Z: 4, N: 10, halfLife: 0.00003, decayModes: { neutronEmission: 1 } },      // ¹⁴Be
-
-// Bore (Z=5)
-{ Z: 5, N: 4, halfLife: 0.00005, decayModes: { protonEmission: 1 } },        // ⁹B
-{ Z: 5, N: 5, halfLife: Infinity, decayModes: {} },                          // ¹⁰B stable
-{ Z: 5, N: 6, halfLife: Infinity, decayModes: {} },                          // ¹¹B stable
-{ Z: 5, N: 7, halfLife: 13.81, decayModes: { betaMinus: 1 } },               // ¹²B
-{ Z: 5, N: 8, halfLife: 0.0202, decayModes: { betaMinus: 1 } },              // ¹³B
-{ Z: 5, N: 9, halfLife: 0.0024, decayModes: { betaMinus: 1 } },              // ¹⁴B
-{ Z: 5, N: 10, halfLife: 0.00013, decayModes: { betaMinus: 1 } },            // ¹⁵B
-{ Z: 5, N: 11, halfLife: 0.00007, decayModes: { neutronEmission: 1 } },      // ¹⁶B
-{ Z: 5, N: 12, halfLife: 0.00004, decayModes: { neutronEmission: 1 } },      // ¹⁷B
-
-// Carbone (Z=6)
-{ Z: 6, N: 4, halfLife: 0.0003, decayModes: { protonEmission: 1 } },         // ¹⁰C
-{ Z: 6, N: 5, halfLife: 0.019, decayModes: { betaPlus: 1 } },                // ¹¹C
-{ Z: 6, N: 6, halfLife: Infinity, decayModes: {} },                          // ¹²C stable
-{ Z: 6, N: 7, halfLife: Infinity, decayModes: {} },                          // ¹³C stable
-{ Z: 6, N: 8, halfLife: 1.81e11, decayModes: { betaMinus: 1 } },             // ¹⁴C
-{ Z: 6, N: 9, halfLife: 2.45, decayModes: { betaMinus: 1 } },                // ¹⁵C
-{ Z: 6, N: 10, halfLife: 0.0077, decayModes: { betaMinus: 1 } },             // ¹⁶C
-{ Z: 6, N: 11, halfLife: 0.0006, decayModes: { betaMinus: 1 } },             // ¹⁷C
-{ Z: 6, N: 12, halfLife: 0.00004, decayModes: { neutronEmission: 1 } },      // ¹⁸C
-{ Z: 6, N: 13, halfLife: 0.00002, decayModes: { neutronEmission: 1 } },      // ¹⁹C
-
-// Azote (Z=7)
-{ Z: 7, N: 5, halfLife: 0.0001, decayModes: { protonEmission: 1 } },         // ¹²N
-{ Z: 7, N: 6, halfLife: 11, decayModes: { betaPlus: 1 } },                   // ¹³N
-{ Z: 7, N: 7, halfLife: Infinity, decayModes: {} },                          // ¹⁴N stable
-{ Z: 7, N: 8, halfLife: Infinity, decayModes: {} },                          // ¹⁵N stable
-{ Z: 7, N: 9, halfLife: 5.13, decayModes: { betaMinus: 1 } },                // ¹⁶N
-{ Z: 7, N: 10, halfLife: 0.0073, decayModes: { betaMinus: 1 } },             // ¹⁷N
-{ Z: 7, N: 11, halfLife: 0.0006, decayModes: { betaMinus: 1 } },             // ¹⁸N
-{ Z: 7, N: 12, halfLife: 0.0001, decayModes: { neutronEmission: 1 } },       // ¹⁹N
-{ Z: 7, N: 13, halfLife: 0.00004, decayModes: { neutronEmission: 1 } },      // ²⁰N
-
-// Oxygène (Z=8)
-{ Z: 8, N: 6, halfLife: 0.0003, decayModes: { protonEmission: 1 } },         // ¹⁴O
-{ Z: 8, N: 7, halfLife: 70.6, decayModes: { betaPlus: 1 } },                 // ¹⁵O
-{ Z: 8, N: 8, halfLife: Infinity, decayModes: {} },                          // ¹⁶O stable
-{ Z: 8, N: 9, halfLife: Infinity, decayModes: {} },                          // ¹⁷O stable
-{ Z: 8, N: 10, halfLife: 1.27e8, decayModes: { betaMinus: 1 } },             // ¹⁸O (stable en fait, je laisse beta- pour équilibrer)
-{ Z: 8, N: 11, halfLife: 0.0023, decayModes: { betaMinus: 1 } },             // ¹⁹O
-{ Z: 8, N: 12, halfLife: 0.00046, decayModes: { betaMinus: 1 } },            // ²⁰O
-{ Z: 8, N: 13, halfLife: 0.0003, decayModes: { neutronEmission: 1 } },       // ²¹O
-{ Z: 8, N: 14, halfLife: 0.00002, decayModes: { neutronEmission: 1 } },      // ²²O
-
-// Fluor (Z=9)
-{ Z: 9, N: 7, halfLife: 0.0001, decayModes: { protonEmission: 1 } },         // ¹⁶F
-{ Z: 9, N: 8, halfLife: 1.33, decayModes: { betaPlus: 1 } },                 // ¹⁷F
-{ Z: 9, N: 9, halfLife: Infinity, decayModes: {} },                          // ¹⁸F
-{ Z: 9, N: 10, halfLife: Infinity, decayModes: {} },                         // ¹⁹F stable
-{ Z: 9, N: 11, halfLife: 0.0013, decayModes: { betaMinus: 1 } },             // ²⁰F
-{ Z: 9, N: 12, halfLife: 0.0009, decayModes: { betaMinus: 1 } },             // ²¹F
-{ Z: 9, N: 13, halfLife: 0.0005, decayModes: { neutronEmission: 1 } },       // ²²F
-{ Z: 9, N: 14, halfLife: 0.0002, decayModes: { neutronEmission: 1 } },       // ²³F
-
-// Néon (Z=10)
-{ Z: 10, N: 8, halfLife: 0.00005, decayModes: { protonEmission: 1 } },       // ¹⁸Ne
-{ Z: 10, N: 9, halfLife: 1.67, decayModes: { betaPlus: 1 } },                // ¹⁹Ne
-{ Z: 10, N: 10, halfLife: Infinity, decayModes: {} },                        // ²⁰Ne stable
-{ Z: 10, N: 11, halfLife: Infinity, decayModes: {} },                        // ²¹Ne stable
-{ Z: 10, N: 12, halfLife: 7.1, decayModes: { betaMinus: 1 } },               // ²²Ne
-{ Z: 10, N: 13, halfLife: 0.031, decayModes: { betaMinus: 1 } },             // ²³Ne
-{ Z: 10, N: 14, halfLife: 0.003, decayModes: { betaMinus: 1 } },             // ²⁴Ne
-{ Z: 10, N: 15, halfLife: 0.001, decayModes: { neutronEmission: 1 } },       // ²⁵Ne
-{ Z: 10, N: 16, halfLife: 0.0003, decayModes: { neutronEmission: 1 } },      // ²⁶Ne
-
-// Sodium (Z=11)
-{ Z: 11, N: 9, halfLife: 0.0002, decayModes: { protonEmission: 1 } },        // ²⁰Na
-{ Z: 11, N: 10, halfLife: 0.448, decayModes: { betaPlus: 1 } },              // ²¹Na
-{ Z: 11, N: 11, halfLife: Infinity, decayModes: {} },                        // ²²Na
-{ Z: 11, N: 12, halfLife: Infinity, decayModes: {} },                        // ²³Na stable
-{ Z: 11, N: 13, halfLife: 14.9, decayModes: { betaMinus: 1 } },              // ²⁴Na
-{ Z: 11, N: 14, halfLife: 15, decayModes: { betaMinus: 1 } },                // ²⁵Na
-{ Z: 11, N: 15, halfLife: 1.2, decayModes: { betaMinus: 1 } },               // ²⁶Na
-{ Z: 11, N: 16, halfLife: 0.009, decayModes: { neutronEmission: 1 } },       // ²⁷Na
-{ Z: 11, N: 17, halfLife: 0.002, decayModes: { neutronEmission: 1 } },       // ²⁸Na
-
-// Magnésium (Z=12)
-{ Z: 12, N: 10, halfLife: 0.0001, decayModes: { protonEmission: 1 } },       // ²²Mg
-{ Z: 12, N: 11, halfLife: 3.9, decayModes: { betaPlus: 1 } },                // ²³Mg
-{ Z: 12, N: 12, halfLife: Infinity, decayModes: {} },                        // ²⁴Mg stable
-{ Z: 12, N: 13, halfLife: Infinity, decayModes: {} },                        // ²⁵Mg stable
-{ Z: 12, N: 14, halfLife: 5e10, decayModes: {} },                            // ²⁶Mg stable (longue vie)
-{ Z: 12, N: 15, halfLife: 0.02, decayModes: { betaMinus: 1 } },              // ²⁷Mg
-{ Z: 12, N: 16, halfLife: 0.3, decayModes: { betaMinus: 1 } },               // ²⁸Mg
-{ Z: 12, N: 17, halfLife: 0.01, decayModes: { neutronEmission: 1 } },        // ²⁹Mg
-{ Z: 12, N: 18, halfLife: 0.002, decayModes: { neutronEmission: 1 } },       // ³⁰Mg
-
-// Aluminium (Z=13)
-{ Z: 13, N: 12, halfLife: 0.00001, decayModes: { protonEmission: 1 } },      // ²⁵Al
-{ Z: 13, N: 13, halfLife: 7.2, decayModes: { betaPlus: 1 } },                // ²⁶Al
-{ Z: 13, N: 14, halfLife: Infinity, decayModes: {} },                        // ²⁷Al stable
-{ Z: 13, N: 15, halfLife: 0.015, decayModes: { betaMinus: 1 } },             // ²⁸Al
-{ Z: 13, N: 16, halfLife: 2.3, decayModes: { betaMinus: 1 } },               // ²⁹Al
-{ Z: 13, N: 17, halfLife: 0.007, decayModes: { betaMinus: 1 } },             // ³⁰Al
-{ Z: 13, N: 18, halfLife: 0.002, decayModes: { neutronEmission: 1 } },       // ³¹Al
-{ Z: 13, N: 19, halfLife: 0.001, decayModes: { neutronEmission: 1 } },       // ³²Al
-
-// Silicium (Z=14)
-{ Z: 14, N: 12, halfLife: 0.00005, decayModes: { protonEmission: 1 } },      // ²⁶Si
-{ Z: 14, N: 13, halfLife: 4.9, decayModes: { betaPlus: 1 } },                // ²⁷Si
-{ Z: 14, N: 14, halfLife: Infinity, decayModes: {} },                        // ²⁸Si stable
-{ Z: 14, N: 15, halfLife: Infinity, decayModes: {} },                        // ²⁹Si stable
-{ Z: 14, N: 16, halfLife: Infinity, decayModes: {} },                        // ³⁰Si stable
-{ Z: 14, N: 17, halfLife: 1.1, decayModes: { betaMinus: 1 } },               // ³¹Si
-{ Z: 14, N: 18, halfLife: 0.17, decayModes: { betaMinus: 1 } },              // ³²Si
-{ Z: 14, N: 19, halfLife: 0.03, decayModes: { neutronEmission: 1 } },        // ³³Si
-{ Z: 14, N: 20, halfLife: 0.01, decayModes: { neutronEmission: 1 } },        // ³⁴Si
-
-// Phosphore (Z=15)
-{ Z: 15, N: 13, halfLife: 0.00001, decayModes: { protonEmission: 1 } },      // ²⁸P
-{ Z: 15, N: 14, halfLife: 0.28, decayModes: { betaPlus: 1 } },               // ²⁹P
-{ Z: 15, N: 15, halfLife: Infinity, decayModes: {} },                        // ³⁰P stable
-{ Z: 15, N: 16, halfLife: 14.3, decayModes: { betaMinus: 1 } },              // ³¹P stable
-{ Z: 15, N: 17, halfLife: 14.1, decayModes: { betaMinus: 1 } },              // ³²P
-{ Z: 15, N: 18, halfLife: 0.14, decayModes: { betaMinus: 1 } },              // ³³P
-{ Z: 15, N: 19, halfLife: 0.025, decayModes: { neutronEmission: 1 } },       // ³⁴P
-{ Z: 15, N: 20, halfLife: 0.01, decayModes: { neutronEmission: 1 } },        // ³⁵P
-{ Z: 15, N: 21, halfLife: 0.005, decayModes: { neutronEmission: 1 } },       // ³⁶P
-
-  // Z, N, halfLife (s), spontaneousFissionProb (par s), fissionFragmentDistribution (moyenne masse fragment léger)
-  { Z: 92, N: 146, halfLife: 1.41e17, spontaneousFissionProb: 5e-11, fissionFragmentMassLight: 95 }, // U-238
-  { Z: 94, N: 150, halfLife: 7.1e10, spontaneousFissionProb: 1e-7, fissionFragmentMassLight: 90 },  // Pu-244 (hypothétique)
-  { Z: 98, N: 153, halfLife: 6.7e6, spontaneousFissionProb: 1e-5, fissionFragmentMassLight: 100 },  // Cf-251
-  ];  
-  */
- const ISOTOPES_DATA = [
-
- ]
   function screenToWorld(x, y) {
     return {
       x: (x - canvas.width / 2) / camera.zoom + camera.x,
@@ -365,7 +243,7 @@ class Particle {
       this.x = x;
       this.y = y;
       this.type = type;
-      this.radius = type == "e" ? (type == "e+" ? PARTICLE_RADIUS/3: PARTICLE_RADIUS / 3) : PARTICLE_RADIUS
+      this.radius = (type == "e" || type == "e+") ? PARTICLE_RADIUS / 3 : PARTICLE_RADIUS
     }
   
     contains(x, y) {
@@ -391,11 +269,13 @@ class Particle {
       
         // Couleurs selon type
         ctx.fillStyle =
-          this.type === 'p' ? 'blue' :
-          this.type === 'n' ? 'white' :
-          this.type === 'e' ? '#ff006c' :       // électron (rose)
-          this.type === 'e+' ? '#ff6666' :      // positron (rouge clair)
-          '#888';  // par défaut si inconnu
+          this.type === 'p' ? 'blue' ://proton
+          this.type === 'n' ? 'white' ://neutron
+          this.type === 'e' ? '#ff006c' :       // électron
+          this.type === 'e+' ? '#00ffcd' :      // positron
+          this.type === 'p-' ? '#fff300' : //antiproton
+          this.type === 'n-' ? '#000000' ://antineutron
+          '#888';
       
         ctx.fill();
         ctx.strokeStyle = '#222';
@@ -405,46 +285,68 @@ class Particle {
         ctx.font = `${this.radius * camera.zoom}px sans-serif`;
         ctx.textAlign = 'center';
         ctx.textBaseline = 'middle';
-        ctx.fillText(this.type === 'e+' ? 'e⁺' : this.type, screen.x, screen.y);
+        ctx.fillText(//convert stuff
+          this.type === 'e+' ? 'e⁺' :
+          this.type === 'p-' ? 'p\u0305' :
+          this.type === 'n-' ? 'n\u0305' :
+          this.type,
+          screen.x,
+          screen.y
+        );
       }
       
 }
-  function onMouseMove(e) {
-    if (!selectedAtom) return;
-  
-    const pos = screenToWorld(e.clientX, e.clientY);
-    const now = performance.now();
-  
-    if (lastMouse && lastTime) {
-      let dt = (now - lastTime) / 1000;
-      if (dt < 0.001) dt = 0.001; // /0 lol
-  
-      let dx = pos.x - lastMouse.x;
-      let dy = pos.y - lastMouse.y;
-  
+let draggingCamera = false;
+let lastScreenX = null;
+let lastScreenY = null;
+function onMouseMove(e) {
+  if (!selectedAtom && !draggingCamera) return;
+
+  const pos = screenToWorld(e.clientX, e.clientY);
+  const now = performance.now();
+
+  if (lastMouse && lastTime) {
+    let dt = (now - lastTime) / 1000;
+    if (dt < 0.001) dt = 0.001; // éviter /0
+
+    const dx = pos.x - lastMouse.x;
+    const dy = pos.y - lastMouse.y;
+
+    if (selectedAtom) {
       const MAX_DRAG_VELOCITY = 200;
 
       let vx = (dx / dt) * 0.005;
       let vy = (dy / dt) * 0.005;
-      
+
       const speed = Math.hypot(vx, vy);
       if (speed > MAX_DRAG_VELOCITY) {
         const scale = MAX_DRAG_VELOCITY / speed;
         vx *= scale;
         vy *= scale;
       }
-      
-  
+
       selectedAtom.vx = vx;
       selectedAtom.vy = vy;
+
+      selectedAtom.x = pos.x;
+      selectedAtom.y = pos.y;
+    }  else if (draggingCamera) {
+      const dx = e.clientX - lastScreenX;
+      const dy = e.clientY - lastScreenY;
+  
+      camera.x -= dx;
+      camera.y -= dy;
+  
+      lastScreenX = e.clientX;
+      lastScreenY = e.clientY;
     }
-  
-    selectedAtom.x = pos.x;
-    selectedAtom.y = pos.y;
-  
-    lastMouse = pos;
-    lastTime = now;
   }
+
+  lastMouse = pos;
+  lastTime = now;
+}
+
+
   function onMouseDown(e) {
     const pos = screenToWorld(e.clientX, e.clientY);
     lastMouse = pos;
@@ -454,6 +356,7 @@ class Particle {
       if (atom.contains(pos.x, pos.y)) {
         selectedAtom = atom;
         atom.dragging = true;
+        draggingCamera = false;
         return;
       }
     }
@@ -462,10 +365,16 @@ class Particle {
       if (p.contains(pos.x, pos.y)) {
         selectedAtom = p;
         p.dragging = true;
+        draggingCamera = false;
         return;
       }
     }
+
+    draggingCamera = true;
+    lastScreenX = e.clientX;
+    lastScreenY = e.clientY;
   }
+  
   function isOnScreen(x, y, radius = 0) {
     const screenPos = worldToScreen(x, y);
     return (
@@ -966,19 +875,38 @@ class Atom {
     
       addParticle(particle) {
         if (particle.type === "e+") {
-          // Chercher un électron à annihiler
           const electronIndex = this.particles.findIndex(p => p.type === "e");
           if (electronIndex !== -1) {
-            // Retirer un électron
-            this.particles.splice(electronIndex, 1);
-            console.log(`${this.name} : annihilation d'un électron par un positron.`);
-          } else {
-            // Pas d'électron à annihiler, on ne fait rien (ou autre logique)
+            this.particles.splice(electronIndex, 1)};
+            //console.log(`${this.name} : annihilation d'un électron par un positron.`);
+          /*} else {
             console.log(`${this.name} : positron sans électron à annihiler.`);
-          }
-          // Mise à jour après annihilation
+          }*/
           this.updateAll();
-          // On ne pousse pas le positron dans particles de l'atome
+          return;
+        }
+        if (particle.type === "n-") {
+          if (this.neutrons < 2)/* == 1 */ {
+            atoms = atoms.filter(a => a !== this);
+            addParticle(this.x, this.y, "p");
+          } else {
+          const neutronIndex = this.particles.findIndex(n => n.type === "n");
+          if (neutronIndex !== -1) {
+            this.particles.splice(neutronIndex, 1);
+          }
+          this.updateAll()};
+          return;
+        }
+        if (particle.type === "p-") {
+          if (this.protons < 2)/* == 1 */ {
+            atoms = atoms.filter(a => a !== this);
+            addParticle(this.x, this.y, "n");
+          } else {
+          const pIndex = this.particles.findIndex(p => p.type === "p");
+          if (pIndex !== -1) {
+            this.particles.splice(pIndex, 1);
+          }
+          this.updateAll()};
           return;
         }
         /*if (particle.type === "e") {
@@ -1066,21 +994,32 @@ class Atom {
     const bondDistanceFactor = 3 * distanceBetweenBondedAtomsCoef;
     const maxBondOrder = 3;
   
-    //Rupture des liaisons
+//Rupture des liaisons
     bonds = bonds.filter(bond => {
+  // do you exist lul
+      const aStillExists = atoms.includes(bond.a);
+      const bStillExists = atoms.includes(bond.b);
+  
+     if (!aStillExists || !bStillExists) {
+//no more atoms?
+       return false;
+     }
+
       const dx = bond.a.x - bond.b.x;
       const dy = bond.a.y - bond.b.y;
       const dist = Math.hypot(dx, dy);
-  
+
       const breakDistance = (bond.a.baseRadius + bond.b.baseRadius) * baseBreakDistanceFactor * bond.breakForce;
-  
+
       if (dist > breakDistance) {
         bond.a.electrons++;
         bond.b.electrons++;
         return false;
       }
+
       return true;
     });
+
   
     //Création des nouvelles liaisons
     for (let i = 0; i < atoms.length; i++) {
@@ -1214,6 +1153,7 @@ function onMouseUp(e) {
     lastMouse = null;
     lastTime = null;
   }
+  draggingCamera = false;
 }
 
   
@@ -1346,11 +1286,11 @@ function addParticle(x, y, type) {
   particles.push(new Particle(x, y, type));
 }
 
-function handleMouse(e) {
+/*function handleMouse(e) {
   if (e.button === 0) addParticle(mousePos.x, mousePos.y, 'n');
   else if (e.button === 1) addParticle(mousePos.x, mousePos.y, 'e');
   else if (e.button === 2) addParticle(mousePos.x, mousePos.y, 'p');
-}
+}*/
 
 /*function handleKey(e) {
   if (e.key === 'a') addParticle(mousePos.x, mousePos.y, 'n');
@@ -1371,6 +1311,26 @@ function distance(a, b) {
 function checkForAtoms() {
   for (let i = 0; i < particles.length; i++) {
     const p1 = particles[i];
+    //antimatiere matière
+    if (p1.type == 'p-' || p1.type == 'n-' || p1.type == 'e+') {
+      if (p1.type == 'e+') {
+        const nearbyAnnihilator = particles.find(p2 =>
+          ['e'].includes(p2.type) && distance(p1, p2) < COMBINE_DISTANCE / 3
+        );
+        if (nearbyAnnihilator) {
+          particles = particles.filter(p => p !== p1 && p !== nearbyAnnihilator);
+          break;
+        }
+      } else {
+      const nearbyAnnihilator = particles.find(p2 =>
+        ['p', 'n'].includes(p2.type) && distance(p1, p2) < COMBINE_DISTANCE
+      );
+      if (nearbyAnnihilator) {
+        particles = particles.filter(p => p !== p1 && p !== nearbyAnnihilator);
+        break;
+      }
+    }
+    }
     if (p1.type !== 'p') continue;
 
     //const nearbyN = particles.find(p2 => p2.type === 'n' && distance(p1, p2) < COMBINE_DISTANCE);
@@ -1568,6 +1528,12 @@ function fuseAtoms(a, b) {
         case 'z': addParticle(mousePos.x, mousePos.y, 'p')
         break;
         case 'e': addParticle(mousePos.x, mousePos.y, 'e')
+        break;
+        case 'q': addParticle(mousePos.x, mousePos.y, 'n-')
+        break;
+        case 's': addParticle(mousePos.x, mousePos.y, 'p-')
+        break;
+        case 'd': addParticle(mousePos.x, mousePos.y, 'e+')
         break;
     }
   })  
