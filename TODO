@@ -1,0 +1,12 @@
+- Ajouter des protons à un atome devrait toujours check si les liasons sont encore valables car en ce moment, une mlécule de H-H peut se transformer en H-He lol (bug)
+- copier coller atome (& spawn direct l'atome que tu veux)?
+- Ecran titre avec des paramètres (friction) tels qu'astrolith
+- Désintégration nucléaires via les données de NuDat (le json dans une const js?)
+- Le drag de la caméra est différent en vitesse en fonction du zoom
+- "vrai" zoom de la caméra via la molette de la souris/trackpad
+- Antimatière. Que dire de plus? p- et  e+ = 1 anti hydrogène (hex inversés pour les couleurs je pense)
+- fixer le fait que le jeu ne prend pas en compte la masse de l'atome durant la fusion ce qui propulse le nouvel atome, ridicule pour les éléments lourds
+- énergie de fusion =  pas explodentiellement plus grande
+- fission nucléaire (example): n + u335 égal boom
+- ???? Peut-être jouer avec les angles des atomes pour faire des molécules plus réalistes ???? (mauvaise idée..)
+- Ajout définitif de l'énergie dans le jeu, qui permet de faire des choses :) (vrmt pour plus tard lorsque ça deviendra plus qu'une sim.)
