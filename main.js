@@ -159,12 +159,47 @@ const ELEMENTS = {
     117: [1, 3, 5, 7], 118: [0]
   };*/
 
-  function negativeOrPositive() {
+  /*function negativeOrPositive() {
     let n = Math.random()
     if (n >= 0.5) {
       return 1
     } else {
       return -1
+    }
+  }*/
+
+  function convertTimeUnitsToSecs(value, unit = "s") {
+    if (value=="STABLE") return Infinity;
+    switch(unit) {
+      case "MeV":
+      case "eV":
+      case "keV":
+        return 0
+      break;
+      case "s":
+        return value
+      break;
+      case "ns":
+        return value / 1000000000
+      break;
+      case "µs":
+        return value / 1000000
+      break;
+      case "ms":
+        return value / 1000
+      break;
+      case "m":
+        return value * 60
+      break;
+      case "h":
+        return value * 3600
+      break;
+      case "d":
+        return value * 86400
+      break;
+      case "y":
+        return value * 31536000
+      break;
     }
   }
 
@@ -362,12 +397,19 @@ class Atom {
         this.computeHalfLifeAndDecayMode();*/
         this.particles = particles || [];
         this.bonds = []
+        this.age = 0
         this.updateAll();
     }
       
         
 
-      
+    atomLoop() {
+      this.age+=1/24 //24 frames per second (lol?)
+      if (this.age >= this.halflife) {
+        this.disintegration()
+      }
+    }
+
     drawElectrons() {
       const screen = worldToScreen(this.x, this.y);
       const radius = (this.baseRadius + 10) * camera.zoom;
@@ -435,7 +477,8 @@ class Atom {
           `Neutrons : ${this.neutrons}`,
           `Electrons : ${this.electronsTotal}`,
           `Charge : ${this.charge >= 0 ? '+' : ''}${this.charge}`,
-          `Atomic Mass : ${this.mass}`
+          `Atomic Mass : ${this.mass}`,
+          `Half-Life : ${this.halfLifeTooltip[0].toString() + this.halfLifeTooltip[1]}`
         ];
     
         const padding = 6 * camera.zoom;
@@ -587,10 +630,47 @@ class Atom {
           
       }*/
 
+      waitYouArenotSupposedToExistSoIKillYou() {
+        for (let i = 0; i<this.protons; i++) {this.ejectParticle("p", 5)}
+        for (let i = 0; i<this.neutrons; i++) {this.ejectParticle("n", 5)}
+        for (let i = 0; i<this.electronsTotal; i++) {this.ejectParticle("e", 5)}
+        atoms = atoms.filter(a => a !== this);
+      }
+
+
+      assignHalfLife() {//and decay modes
+        const isotope = Object.values(atomData).find(n =>
+            n.z === this.protons &&
+            n.n === this.neutrons
+        );
+        
+        let dataLevel = isotope?.levels[0] || null
+        if (dataLevel != null) {
+          if (dataLevel.halflife != null) {
+            if (dataLevel.halflife.value == "STABLE") {
+              this.halfLifeTooltip = [dataLevel.halflife.value, ""]
+            } else {
+              this.halfLifeTooltip = [dataLevel.halflife.value, dataLevel.halflife.unit]
+            }
+            this.halflife = convertTimeUnitsToSecs(dataLevel.halflife.value, dataLevel.halflife.unit)
+          } else {//sinon l'élément est inconnu et il se DESINTEGRE SUR LE CHAMP HAHAHAHAHA JE SUIS TROP MECHANT!!!!!!!
+            this.waitYouArenotSupposedToExistSoIKillYou()
+          }
+
+          if (dataLevel.decayModes !=null) {
+            this.decayModes = dataLevel.decayModes.observed
+          }
+
+
+        } else {
+          this.waitYouArenotSupposedToExistSoIKillYou()
+        }
+      }
+
       ejectAtom(p, n, e, speed = 5) {
         const angle = Math.random() * Math.PI * 2;
         //juste à l'extérieur de l'atome avec un peu de sécurité
-        const distance = this.baseRadius * (1.1 + Math.random() * 0.2);
+        const distance = this.baseRadius * (1.5 + Math.random() * 0.2);
   
         const x = this.x + Math.cos(angle) * distance;
         const y = this.y + Math.sin(angle) * distance;
@@ -647,11 +727,86 @@ class Atom {
             this.ejectParticle("e", 5);
         }
       }
+      dsf() {
+        let randomp = ((this.protons - 1) * Math.random()) +1
+        let randomn = ((this.neutrons - 1) * Math.random()) + 1
+        this.ejectAtom(randomp, randomn, randomp)
+        this.ejectAtom(this.protons-randomp, this.neutrons-randomn, this.protons-randomp)
+        atoms = atoms.filter(a => a !== this);
+      }
 
       disintegration() {
-        this.dBeta(false);
-        this.updateAll();
+        if (!this.decayModes || this.decayModes.length === 0) {
+            this.updateAll();
+            return;
+        }
+        const totalChance = this.decayModes.reduce((sum, dm) => sum + dm.value, 0);
+        const random = Math.random() * totalChance;
+    
+        let cumulative = 0;
+        let chosenDecay = null;
+    
+        for (const dm of this.decayModes) {
+            cumulative += dm.value;
+    
+            if (random <= cumulative) {
+                chosenDecay = dm;
+                break;
+            }
+        }
+    
+        //console.log("Decay choisi :", chosenDecay.mode);
+
+        switch (chosenDecay.mode) {
+            case "ɑ":
+                this.dAlpha();
+            break;
+            case "SF":
+              this.dsf();
+        }
+        
+        // β+ / β-
+        if (chosenDecay.mode.includes("β+")) {
+            this.dBeta(true);
+        }
+        
+        if (chosenDecay.mode.includes("β⁻")) {
+            this.dBeta(false);
+        }
+        
+        // neutrons
+        if (chosenDecay.mode.includes("n")) {
+
+            const match = chosenDecay.mode.match(/(\d*)n/);
+        
+            const count = match && match[1] ? parseInt(match[1], 10) : 1;
+        
+            this.addOrRemove("n", count);
+        
+            for (let i = 0; i < count; i++) {
+                this.ejectParticle("n");
+            }
+
+            atoms = atoms.filter(a => a !== this);
+        }
+
+        if (chosenDecay.mode.includes("p")) {
+          
+          const match = chosenDecay.mode.match(/(\d*)p/);
+      
+          const count = match && match[1] ? parseInt(match[1], 10) : 1;
+      
+          this.addOrRemove("p", count);
+      
+          for (let i = 0; i < count; i++) {
+              this.ejectParticle("p");
+          }
+
+          atoms = atoms.filter(a => a !== this);
       }
+    
+        this.updateAll();
+    }
       
       
       updateMassAndRadius() {
@@ -664,6 +819,7 @@ class Atom {
         this.updateCharge();
         this.updateElementInfo(/*isElectron*/);
         this.updateMassAndRadius();
+        this.assignHalfLife();
         /*this.computeHalfLifeAndDecayMode();
         this.autoChargeRelaxation();*/
       }
@@ -1069,10 +1225,11 @@ function drawGrid() {
       }
     });
   }  
-function drawAtoms() {
+function drawAndUpdateAtoms() {
     atoms.forEach(atom => {
       if (isOnScreen(atom.x, atom.y, atom.baseRadius * camera.zoom)) {
         atom.draw();
+        atom.atomLoop();
       }
     });
   }
@@ -1178,7 +1335,6 @@ function fuseAtoms(a, b) {
   
       atoms = atoms.filter(atom => atom !== a && atom !== b);
       particles = particles.filter(p => p !== a && p !== b);
-  
       atoms.push(fused);
   
       //console.log("Fusion complète:", fused);
@@ -1334,6 +1490,16 @@ function fuseAtoms(a, b) {
             a.disintegration()
           })
         break;
+        case 'l':
+          atoms.forEach(a => {
+            a.waitYouArenotSupposedToExistSoIKillYou()
+          })
+        break;
+        case 'p':
+          atoms.forEach(a => {
+            a.dsf()
+          })
+        break;
     }
   })  
   window.addEventListener("keyup", e => {
@@ -1417,7 +1583,7 @@ function fuseAtoms(a, b) {
       });
     checkBondCollisions();
     drawBonds();
-    drawAtoms();
+    drawAndUpdateAtoms();
     drawParticles();
     checkForAtoms();
     resolveCollisions();
