@@ -399,6 +399,7 @@ class Atom {
         this.bonds = []
         this.age = 0
         this.updateAll();
+        this.needsToBreakBonds = false//après updateall ba ouai
     }
       
         
@@ -478,7 +479,10 @@ class Atom {
           `Electrons : ${this.electronsTotal}`,
           `Charge : ${this.charge >= 0 ? '+' : ''}${this.charge}`,
           `Atomic Mass : ${this.mass}`,
-          `Half-Life : ${this.halfLifeTooltip[0].toString() + this.halfLifeTooltip[1]}`
+          `Half-Life : ${this.halfLifeTooltip[0].toString() + this.halfLifeTooltip[1]}`,
+          ...(this.decayModes?.length
+            ? [`Decay Modes : ${this.decayModes.map(({ mode, value }) => `${mode} ${value}%`).join(", ")}`]
+            : [])
         ];
     
         const padding = 6 * camera.zoom;
@@ -820,6 +824,8 @@ class Atom {
         this.updateElementInfo(/*isElectron*/);
         this.updateMassAndRadius();
         this.assignHalfLife();
+        this.needsToBreakBonds = true
+        //this.bonds = []; // reset
         /*this.computeHalfLifeAndDecayMode();
         this.autoChargeRelaxation();*/
       }
@@ -944,12 +950,14 @@ class Atom {
     const baseBreakDistanceFactor = 3.75 * distanceBetweenBondedAtomsCoef;
     const bondDistanceFactor = 3 * distanceBetweenBondedAtomsCoef;
     const maxBondOrder = 3;
+
   
 //Rupture des liaisons
     bonds = bonds.filter(bond => {
   // do you exist lul
       const aStillExists = atoms.includes(bond.a);
       const bStillExists = atoms.includes(bond.b);
+
   
      if (!aStillExists || !bStillExists) {
 //no more atoms?
@@ -962,7 +970,9 @@ class Atom {
 
       const breakDistance = (bond.a.baseRadius + bond.b.baseRadius) * baseBreakDistanceFactor * bond.breakForce;
 
-      if (dist > breakDistance) {
+      if (dist > breakDistance || (bond.a.needsToBreakBonds || bond.b.needsToBreakBonds)) {
+        bond.a.needsToBreakBonds = false
+        bond.b.needsToBreakBonds = false
         bond.a.electrons++;
         bond.b.electrons++;
         return false;
