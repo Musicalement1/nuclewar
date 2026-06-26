@@ -1,7 +1,5 @@
 import {atomData} from "./nudat3data.js"
 
-console.log(atomData)
-
 const canvas = document.getElementById('canvas');
 const ctx = canvas.getContext('2d');
 
@@ -160,6 +158,16 @@ const ELEMENTS = {
     111: [8], 112: [2], 113: [1, 3], 114: [2, 4], 115: [1, 3], 116: [2, 4],
     117: [1, 3, 5, 7], 118: [0]
   };*/
+
+  function negativeOrPositive() {
+    let n = Math.random()
+    if (n >= 0.5) {
+      return 1
+    } else {
+      return -1
+    }
+  }
+
   function screenToWorld(x, y) {
     return {
       x: (x - canvas.width / 2) / camera.zoom + camera.x,
@@ -190,11 +198,13 @@ canvas.addEventListener('mousemove', e => {
 let selectedAtom = null;
 let lastMouse = { x: 0, y: 0 };
 class Particle {
-    constructor(x, y, type) {
+    constructor(x, y, type, vx = 0, vy = 0) {
       this.x = x;
       this.y = y;
       this.type = type;
       this.radius = (type == "e" || type == "e+") ? PARTICLE_RADIUS / 3 : PARTICLE_RADIUS
+      this.vx = vx
+      this.vy = vy
     }
   
     contains(x, y) {
@@ -339,11 +349,11 @@ function onMouseMove(e) {
   
   
 class Atom {
-    constructor(x, y, particles) {
+    constructor(x, y, particles, vx = 0, vy = 0) {
         this.x = x;
         this.y = y;
-        this.vx = 0;
-        this.vy = 0;
+        this.vx = vx;
+        this.vy = vy;
         this.dragging = false;
         /*this.age = 0;
         this.halfLife = Infinity;
@@ -454,6 +464,28 @@ class Atom {
         ctx.restore();
       }
 
+      addOrRemove(type, number) {
+        if (number > 0) {
+            for (let i = 0; i < number; i++) {
+                this.particles.push({ type });
+            }
+        } else if (number < 0) {
+            for (let i = 0; i < Math.abs(number); i++) {
+                const index = this.particles.findIndex(p => p.type === type);
+    
+                if (index === -1) {
+                    break;// plus de particules de ce type
+                }
+    
+                this.particles.splice(index, 1);
+            }
+        }
+    
+        this.protons = this.particles.filter(p => p.type === 'p').length;
+        this.neutrons = this.particles.filter(p => p.type === 'n').length;
+        this.electronsTotal = this.particles.filter(p => p.type === 'e').length;
+    }
+
       updateCounts() {
         this.protons = this.particles.filter(p => p.type === 'p').length;
         this.neutrons = this.particles.filter(p => p.type === 'n').length;
@@ -554,6 +586,72 @@ class Atom {
           }
           
       }*/
+
+      ejectAtom(p, n, e, speed = 5) {
+        const angle = Math.random() * Math.PI * 2;
+        //juste à l'extérieur de l'atome avec un peu de sécurité
+        const distance = this.baseRadius * (1.1 + Math.random() * 0.2);
+  
+        const x = this.x + Math.cos(angle) * distance;
+        const y = this.y + Math.sin(angle) * distance;
+
+        const actualSpeed = speed * (0.9 + Math.random() * 0.2);
+    
+        const vx = Math.cos(angle) * actualSpeed;
+        const vy = Math.sin(angle) * actualSpeed;
+
+        let parts = []
+
+        for (let j = 0; j < p; j++) {
+          parts.push({ type: 'p' });
+        }
+        for (let j = 0; j < n; j++) {
+          parts.push({ type: 'n' });
+        }
+        for (let j = 0; j < e; j++) {
+          parts.push({ type: 'e' });
+        }
+    
+        atoms.push(new Atom(x, y, parts,vx, vy));
+      }
+
+      ejectParticle(type, speed = 10) {
+        const angle = Math.random() * Math.PI * 2;
+        //juste à l'extérieur de l'atome avec un peu de sécurité
+        const distance = this.baseRadius * (1.1 + Math.random() * 0.2);
+  
+        const x = this.x + Math.cos(angle) * distance;
+        const y = this.y + Math.sin(angle) * distance;
+
+        const actualSpeed = speed * (0.9 + Math.random() * 0.2);
+    
+        const vx = Math.cos(angle) * actualSpeed;
+        const vy = Math.sin(angle) * actualSpeed;
+    
+        particles.push(new Particle(x, y, type, vx, vy));
+      }
+
+      dAlpha() {
+        this.addOrRemove("p", -2);
+        this.addOrRemove("n", -2);
+        this.ejectAtom(2, 2, 0)
+      } 
+      dBeta(plus = false) {
+        if (plus) { // β+
+            this.addOrRemove("p", -1);
+            this.addOrRemove("n", +1);
+            this.ejectParticle("e+", 5);
+        } else { // β-
+            this.addOrRemove("p", +1);
+            this.addOrRemove("n", -1);
+            this.ejectParticle("e", 5);
+        }
+      }
+
+      disintegration() {
+        this.dBeta(false);
+        this.updateAll();
+      }
       
       
       updateMassAndRadius() {
@@ -1230,6 +1328,11 @@ function fuseAtoms(a, b) {
         case 's': addParticle(mousePos.x, mousePos.y, 'p-')
         break;
         case 'd': addParticle(mousePos.x, mousePos.y, 'e+')
+        break;
+        case 'm':
+          atoms.forEach(a => {
+            a.disintegration()
+          })
         break;
     }
   })  
