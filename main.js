@@ -182,7 +182,7 @@ const ELEMENTS = {
       case "ns":
         return value / 1000000000
       break;
-      case "µs":
+      case "us":
         return value / 1000000
       break;
       case "ms":
@@ -240,6 +240,7 @@ class Particle {
       this.radius = (type == "e" || type == "e+") ? PARTICLE_RADIUS / 3 : PARTICLE_RADIUS
       this.vx = vx
       this.vy = vy
+      this.electronTime = 0
     }
   
     contains(x, y) {
@@ -1297,11 +1298,16 @@ function checkForAtoms() {
 
     //const nearbyN = particles.find(p2 => p2.type === 'n' && distance(p1, p2) < COMBINE_DISTANCE);
     const nearbyE = particles.find(p2 => p2.type === 'e' && distance(p1, p2) < COMBINE_DISTANCE);
-
+    
     if (/*nearbyN && */nearbyE) {
-      atoms.push(new Atom(p1.x, p1.y, [p1, /*nearbyN*/0, nearbyE]));
-      particles = particles.filter(p => p !== p1/* && p !== nearbyN*/ && p !== nearbyE);
-      break;
+      p1.electronTime++
+      if (p1.electronTime > 64) {
+        atoms.push(new Atom(p1.x, p1.y, [p1, /*nearbyN*/0, nearbyE]));
+        particles = particles.filter(p => p !== p1/* && p !== nearbyN*/ && p !== nearbyE);
+        break;
+      }
+    } else if (p1.electronTime > 0) {
+      p1.electronTime--
     }
   }
 }
@@ -1325,8 +1331,17 @@ function fuseAtoms(a, b) {
       if (isParticleB) combinedParticles.push(b);
   
       const fused = new Atom(newX, newY, combinedParticles);
-      fused.vx = ((a.vx || 0) + (b.vx || 0)) / 2;
-      fused.vy = ((a.vy || 0) + (b.vy || 0)) / 2;
+      const massA = a.mass || 0;
+      const massB = b.mass || 0;
+      const totalMass = massA + massB;
+      
+      if (totalMass > 0) {
+        fused.vx = ((a.vx || 0) * massA + (b.vx || 0) * massB) / totalMass;
+        fused.vy = ((a.vy || 0) * massA + (b.vy || 0) * massB) / totalMass;
+      } else {
+        fused.vx = 0;
+        fused.vy = 0;
+      }
   
       bonds = bonds.filter(bond => {
         const isBondedToA = bond.a === a || bond.b === a;
@@ -1371,9 +1386,16 @@ function fuseAtoms(a, b) {
         const a = allObjects[i];
         const b = allObjects[j];
   
-        const dx = b.x - a.x;
-        const dy = b.y - a.y;
-        const dist = Math.hypot(dx, dy);
+        let dx = b.x - a.x;
+        let dy = b.y - a.y;
+        let dist = Math.hypot(dx, dy);
+
+        if (dist === 0) {
+          const angle = Math.random() * Math.PI * 2;
+          dx = Math.cos(angle);
+          dy = Math.sin(angle);
+          dist = 1;
+        }
   
         const radiusA = (a instanceof Atom) ? a.baseRadius : a.radius;
         const radiusB = (b instanceof Atom) ? b.baseRadius : b.radius;
