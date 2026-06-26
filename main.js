@@ -660,15 +660,21 @@ class Atom {
             this.halflife = convertTimeUnitsToSecs(dataLevel.halflife.value, dataLevel.halflife.unit)
           } else {//sinon l'élément est inconnu et il se DESINTEGRE SUR LE CHAMP HAHAHAHAHA JE SUIS TROP MECHANT!!!!!!!
             this.waitYouArenotSupposedToExistSoIKillYou()
+            console.log("Unknown halflive data in dataLevel")
+            console.log(dataLevel)
           }
 
-          if (dataLevel.decayModes !=null) {
+          if (dataLevel.decayModes !=null && this.halflife != Infinity) {
             this.decayModes = dataLevel.decayModes.observed
-          }
+          } /*else {
+            console.log(this.halflife)//Infinities
+          }*/
 
 
         } else {
           this.waitYouArenotSupposedToExistSoIKillYou()
+          console.log("No data level in the atom! Z= " + this.protons + " A-Z= " + this.neutrons)
+          if (this.neutrons <=0 && this.protons <= 0) {atoms.filter(a => a !== this)};
         }
       }
 
@@ -703,7 +709,7 @@ class Atom {
       ejectParticle(type, speed = 10) {
         const angle = Math.random() * Math.PI * 2;
         //juste à l'extérieur de l'atome avec un peu de sécurité
-        const distance = this.baseRadius * (1.1 + Math.random() * 0.2);
+        const distance = this.baseRadius * (1.5 + Math.random() * 0.2);
   
         const x = this.x + Math.cos(angle) * distance;
         const y = this.y + Math.sin(angle) * distance;
@@ -745,12 +751,17 @@ class Atom {
             this.updateAll();
             return;
         }
+
+        if (this.protons <= 0 && this.neutrons <= 0) {
+          atoms.filter(a => a !== this)
+          return
+        }
+
         const totalChance = this.decayModes.reduce((sum, dm) => sum + dm.value, 0);
         const random = Math.random() * totalChance;
     
         let cumulative = 0;
         let chosenDecay = null;
-    
         for (const dm of this.decayModes) {
             cumulative += dm.value;
     
@@ -762,52 +773,68 @@ class Atom {
     
         //console.log("Decay choisi :", chosenDecay.mode);
 
-        switch (chosenDecay.mode) {
+        /*switch (chosenDecay.mode) {
             case "ɑ":
                 this.dAlpha();
             break;
             case "SF":
               this.dsf();
+            break;
+        }*/
+
+        /// On peut enlever "else if" et mettre des "if" mais ça buggue.
+
+
+        if (chosenDecay.mode == "ɑ") {
+          this.dAlpha();
+        } else if (chosenDecay.mode == "SF") {
+          this.dsf();
         }
-        
         // β+ / β-
-        if (chosenDecay.mode.includes("β+")) {
+        else if (chosenDecay.mode.includes("β+")) {
             this.dBeta(true);
         }
         
-        if (chosenDecay.mode.includes("β⁻")) {
+        else if (chosenDecay.mode.includes("β⁻")) {
             this.dBeta(false);
         }
         
         // neutrons
-        if (chosenDecay.mode.includes("n")) {
+        else if (chosenDecay.mode.includes("n")) {
 
             const match = chosenDecay.mode.match(/(\d*)n/);
         
             const count = match && match[1] ? parseInt(match[1], 10) : 1;
         
-            this.addOrRemove("n", count);
+            this.addOrRemove("n", -count);
         
             for (let i = 0; i < count; i++) {
                 this.ejectParticle("n");
             }
 
-            atoms = atoms.filter(a => a !== this);
+            if (this.neutrons <= count) { 
+              atoms = atoms.filter(a => a !== this);
+            }
         }
 
-        if (chosenDecay.mode.includes("p")) {
+        else if (chosenDecay.mode.includes("p")) {
           
           const match = chosenDecay.mode.match(/(\d*)p/);
       
           const count = match && match[1] ? parseInt(match[1], 10) : 1;
       
-          this.addOrRemove("p", count);
+          this.addOrRemove("p", -count);
       
           for (let i = 0; i < count; i++) {
               this.ejectParticle("p");
           }
 
-          atoms = atoms.filter(a => a !== this);
+          if (this.protons <= count) { 
+            atoms = atoms.filter(a => a !== this);
+          }
+      } else {
+        //console.log("Unknown decay mode. Random self-fission was chosen.")
+        this.dsf();
       }
     
         this.updateAll();
@@ -826,6 +853,10 @@ class Atom {
         this.updateMassAndRadius();
         this.assignHalfLife();
         this.needsToBreakBonds = true
+
+        if (this.protons <= 0 && this.neutrons <= 0) {
+          atoms.filter(a => a !== this);
+        }
         //this.bonds = []; // reset
         /*this.computeHalfLifeAndDecayMode();
         this.autoChargeRelaxation();*/
