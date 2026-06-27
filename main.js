@@ -724,8 +724,40 @@ class Atom {
             }
             this.halflife = tirageDesintegration(convertTimeUnitsToSecs(dataLevel.halflife.value, dataLevel.halflife.unit))
             this.gameLifeTime = getGameLifetime(this.halflife);
-          } else {//sinon l'élément est inconnu et il se DESINTEGRE SUR LE CHAMP HAHAHAHAHA JE SUIS TROP MECHANT!!!!!!!
-            this.waitYouArenotSupposedToExistSoIKillYou()
+          } else {
+
+            this.halfLifeTooltip = "Unknown"
+            //sinon l'élément est inconnu et il se DESINTEGRE SUR LE CHAMP HAHAHAHAHA JE SUIS TROP MECHANT!!!!!!! (non en fait)
+            //this.waitYouArenotSupposedToExistSoIKillYou()
+            /*let expectedRatio
+            if (this.protons > 118) {
+              let iwannalive = Math.random() > 0.8 ? true : false
+              if (iwannalive) {
+                this.dAlpha()
+              } else {
+                this.dsf()
+              }
+            }
+
+            if (this.protons < 55) {
+              expectedRatio = 1
+            }
+            else if (this.protons >= 49 && this.protons < 82) {// rapport n/p d'Indium 113 ~ 1.35 et c'est suffisant je pense
+              expectedRatio = 1.35
+            } 
+            else {
+              expectedRatio = 1.5
+            }
+  
+            let actualRatio = this.neutrons/this.protons
+  
+            if (actualRatio >= expectedRatio) {
+              this.dBeta(false)
+            } else {
+              this.dBeta(true)
+            }*/
+            this.dsf()
+
             console.log("Unknown halflive data in dataLevel")
             console.log(dataLevel)
           }
@@ -738,9 +770,38 @@ class Atom {
 
 
         } else {
-          this.waitYouArenotSupposedToExistSoIKillYou()
+          //this.waitYouArenotSupposedToExistSoIKillYou()
+            this.halfLifeTooltip = "Unknown"
+            if (this.neutrons <=0 && this.protons <= 0) {atoms.filter(a => a !== this)};
+            /*let expectedRatio
+            if (this.protons > 118) {
+              let iwannalive = Math.random() > 0.8 ? true : false
+              if (iwannalive) {
+                this.dAlpha()
+              } else {
+                this.dsf()
+              }
+            }
+            if (this.protons < 55) {
+              expectedRatio = 1
+            }
+            else if (this.protons >= 49 && this.protons < 82) {// rapport n/p d'Indium 113 ~ 1.35 et c'est suffisant je pense
+              expectedRatio = 1.35
+            } 
+            else {
+              expectedRatio = 1.5
+            }
+
+            let actualRatio = this.neutrons/this.protons
+  
+            if (actualRatio >= expectedRatio) {
+              this.dBeta(false)
+            } else {
+              this.dBeta(true)
+            }*/
+            this.dsf()
           console.log("No data level in the atom! Z= " + this.protons + " A-Z= " + this.neutrons)
-          if (this.neutrons <=0 && this.protons <= 0) {atoms.filter(a => a !== this)};
+          //ces ptins d'atomes qui n'existent pas me courent sur le haricot mon gras.
         }
       }
 
@@ -805,12 +866,25 @@ class Atom {
         }
       }
       dsf() {
-        let randomp = ((this.protons - 1) * Math.random()) +1
-        let randomn = ((this.neutrons - 1) * Math.random()) + 1
-        this.ejectAtom(randomp, randomn, randomp)
-        this.ejectAtom(this.protons-randomp, this.neutrons-randomn, this.protons-randomp)
+        if (this.protons + this.neutrons < 2) return;
+    
+        //au moins un proton par fragment stp
+        if (this.protons < 2) return;
+    
+        const p1 = Math.floor(Math.random() * (this.protons - 1)) + 1;
+        const p2 = this.protons - p1;
+    
+        const n1 = Math.floor(Math.random() * (this.neutrons + 1));
+        const n2 = this.neutrons - n1;
+    
+        //On est parano donc on vérif quand mm (confiance en soi basse ces temps-ci ouai ouai)
+        if (p1 + n1 === 0 || p2 + n2 === 0) return;
+    
+        this.ejectAtom(p1, n1, p1);
+        this.ejectAtom(p2, n2, p2);
+    
         atoms = atoms.filter(a => a !== this);
-      }
+    }
 
       disintegration() {
         this.age = 0
