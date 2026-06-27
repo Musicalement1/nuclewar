@@ -18,6 +18,8 @@ const PARTICLE_RADIUS = 10;
 const COMBINE_DISTANCE = 25;
 const friction = 0.9925
 const distanceBetweenBondedAtomsCoef = 2//2
+const decaySpeedFactor = 1
+const realLifeTime = false
 //const decaySpeedFactor = 100
 const camSpeed = 20
 const ELEMENTS = {
@@ -382,7 +384,17 @@ function onMouseMove(e) {
       screenPos.y - radius <= canvas.height
     );
   }
+
+  const maxTimeDis = 365 * 24 * 60 * 60 * 3;//sec (3 ans en sec)
+
+  function getGameLifetime(halflife) {
+    const h = Math.max(1, Math.min(halflife, maxTimeDis));
   
+    const t = Math.log10(h) / Math.log10(maxTimeDis);
+  
+    return 1 + t * 119; //entre 1 sec et 2 minutes
+  }
+
   
 class Atom {
     constructor(x, y, particles, vx = 0, vy = 0) {
@@ -406,9 +418,15 @@ class Atom {
         
 
     atomLoop() {
-      this.age+=1/24 //24 frames per second (lol?)
-      if (this.age >= this.halflife) {
-        this.disintegration()
+      this.age+=decaySpeedFactor/24 //24 frames per second
+      if (realLifeTime) {
+        if (this.age >= this.halflife) {
+          this.disintegration()
+        }
+      } else {
+        if (this.age >= this.gameLifeTime) {
+          this.disintegration()
+        }
       }
     }
 
@@ -445,16 +463,50 @@ class Atom {
     isHovered() {
         return Math.hypot(this.x - mousePos.x, this.y - mousePos.y) < this.baseRadius;
       }
+
+      /*drawHalo(ctx, x, y, radius, intensity, color = "120,200,255") {
+        intensity = Math.max(0, Math.min(1, intensity));
+    
+        if (intensity <= 0) return;
+
+        //(entre 1.5× et 3× le rayon le halo)
+        const haloRadius = radius * (1.5 + intensity * 1.5);
+    
+        const gradient = ctx.createRadialGradient(
+            x, y, radius * 0.9,
+            x, y, haloRadius
+        );
+    
+        gradient.addColorStop(0, `rgba(${color}, ${0.25 * intensity})`);
+        gradient.addColorStop(0.4, `rgba(${color}, ${0.12 * intensity})`);
+        gradient.addColorStop(1, `rgba(${color}, 0)`);
+    
+        ctx.save();
+        ctx.fillStyle = gradient;
+        ctx.beginPath();
+        ctx.arc(x, y, haloRadius, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.restore();
+      }*/
+
       draw() {
         const screen = worldToScreen(this.x, this.y);
         const radius = this.baseRadius * camera.zoom;
-    
         ctx.beginPath();
         ctx.arc(screen.x, screen.y, radius, 0, Math.PI * 2);
         ctx.fillStyle = this.color;
         ctx.fill();
         ctx.strokeStyle = '#222';
         ctx.stroke();
+
+        /*if (Number.isFinite(this.halflife) && this.halflife >= 0) {
+          let advancement = this.age / this.halflife
+          //const speed = 2 + advancement * 8; //[2, 10]
+          //const pulse = 0.85 + 0.15 * Math.sin(performance.now() * 0.001 * speed);
+          this.drawHalo(ctx, screen.x, screen.y, radius * 2, advancement)
+        }*/
+
+
     
         ctx.fillStyle = isColorDark(this.color) ? '#fff' : '#000';
         const fontSize = radius * 0.8;
@@ -658,6 +710,7 @@ class Atom {
               this.halfLifeTooltip = [dataLevel.halflife.value, dataLevel.halflife.unit]
             }
             this.halflife = convertTimeUnitsToSecs(dataLevel.halflife.value, dataLevel.halflife.unit)
+            this.gameLifeTime = getGameLifetime(this.halflife);
           } else {//sinon l'élément est inconnu et il se DESINTEGRE SUR LE CHAMP HAHAHAHAHA JE SUIS TROP MECHANT!!!!!!!
             this.waitYouArenotSupposedToExistSoIKillYou()
             console.log("Unknown halflive data in dataLevel")
@@ -747,6 +800,7 @@ class Atom {
       }
 
       disintegration() {
+        this.age = 0
         if (!this.decayModes || this.decayModes.length === 0) {
             this.updateAll();
             return;
