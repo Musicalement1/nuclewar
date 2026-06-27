@@ -22,6 +22,7 @@ const decaySpeedFactor = 1
 const realLifeTime = false
 //const decaySpeedFactor = 100
 const camSpeed = 20
+const maxDrawOffsetDisintegration = 3
 const ELEMENTS = {
     1:  { name: "Hydrogen",      symbol: "H",  color: "#FFFFFF", valenceMax: 1},
     2:  { name: "Helium",        symbol: "He", color: "#FFC0CB", valenceMax: 0},
@@ -161,14 +162,14 @@ const ELEMENTS = {
     117: [1, 3, 5, 7], 118: [0]
   };*/
 
-  /*function negativeOrPositive() {
+  function negativeOrPositive() {
     let n = Math.random()
     if (n >= 0.5) {
       return 1
     } else {
       return -1
     }
-  }*/
+  }
 
   function convertTimeUnitsToSecs(value, unit = "s") {
     if (value=="STABLE") return Infinity;
@@ -489,11 +490,19 @@ class Atom {
         ctx.restore();
       }*/
 
+
+
       draw() {
         const screen = worldToScreen(this.x, this.y);
         const radius = this.baseRadius * camera.zoom;
+        let advancement = 0
+        if (Number.isFinite(this.halflife) && this.halflife >= 0) {
+          advancement = realLifeTime ? this.age / this.halflife : this.age / this.gameLifeTime
+        }
+        const randomXoffset = negativeOrPositive() * maxDrawOffsetDisintegration * Math.random() * advancement
+        const randomYoffset = negativeOrPositive() * maxDrawOffsetDisintegration * Math.random() * advancement
         ctx.beginPath();
-        ctx.arc(screen.x, screen.y, radius, 0, Math.PI * 2);
+        ctx.arc(screen.x + randomXoffset, screen.y + randomYoffset, radius, 0, Math.PI * 2);
         ctx.fillStyle = this.color;
         ctx.fill();
         ctx.strokeStyle = '#222';
@@ -514,7 +523,7 @@ class Atom {
         ctx.textAlign = 'center';
         ctx.textBaseline = 'middle';
 
-        ctx.fillText(this.getChargedSymbol(), screen.x, screen.y);
+        ctx.fillText(this.getChargedSymbol(), screen.x + randomXoffset, screen.y + randomYoffset);
     
         if (this.isHovered()) {
           this.drawTooltip(screen.x, screen.y);
