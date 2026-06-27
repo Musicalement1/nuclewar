@@ -171,6 +171,10 @@ const ELEMENTS = {
     }
   }
 
+  function tirageDesintegration(demieVie) {//la fonction qui gère l'aléatoire quantique, rien que ça! (la durée vie réelle d'un atome donné, qui peut être représenté aléatoirement selon sa demie vie)
+    return -Math.log(Math.random()) * demieVie / Math.log(2);
+  }
+
   function convertTimeUnitsToSecs(value, unit = "s") {
     if (value=="STABLE") return Infinity;
     switch(unit) {
@@ -718,7 +722,7 @@ class Atom {
             } else {
               this.halfLifeTooltip = [dataLevel.halflife.value, dataLevel.halflife.unit]
             }
-            this.halflife = convertTimeUnitsToSecs(dataLevel.halflife.value, dataLevel.halflife.unit)
+            this.halflife = tirageDesintegration(convertTimeUnitsToSecs(dataLevel.halflife.value, dataLevel.halflife.unit))
             this.gameLifeTime = getGameLifetime(this.halflife);
           } else {//sinon l'élément est inconnu et il se DESINTEGRE SUR LE CHAMP HAHAHAHAHA JE SUIS TROP MECHANT!!!!!!!
             this.waitYouArenotSupposedToExistSoIKillYou()
