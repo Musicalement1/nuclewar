@@ -415,7 +415,7 @@ class Atom {
         this.computeHalfLifeAndDecayMode();*/
         this.particles = particles || [];
         this.bonds = []
-        this.age = 0
+        this.age = -1
         this.updateAll();
         this.needsToBreakBonds = false//après updateall ba ouai
     }
@@ -701,10 +701,10 @@ class Atom {
       }*/
 
       waitYouArenotSupposedToExistSoIKillYou() {
+        atoms = atoms.filter(a => a !== this);
         for (let i = 0; i<this.protons; i++) {this.ejectParticle("p", 5)}
         for (let i = 0; i<this.neutrons; i++) {this.ejectParticle("n", 5)}
         for (let i = 0; i<this.electronsTotal; i++) {this.ejectParticle("e", 5)}
-        atoms = atoms.filter(a => a !== this);
       }
 
 
@@ -756,7 +756,19 @@ class Atom {
             } else {
               this.dBeta(true)
             }*/
-            this.dsf()
+            /*if (this.protons > 2) {
+              this.dsf()
+            } else {
+              this.waitYouArenotSupposedToExistSoIKillYou()
+            }*/
+
+            setTimeout(() => {
+              if (this.protons > 2) {
+                this.dsf()
+              } else {
+                this.waitYouArenotSupposedToExistSoIKillYou()
+              }
+            }, 1)
 
             console.log("Unknown halflive data in dataLevel")
             console.log(dataLevel)
@@ -799,8 +811,21 @@ class Atom {
             } else {
               this.dBeta(true)
             }*/
-            this.dsf()
+            /*if (this.protons > 2) {
+              this.dsf()
+            } else {
+              this.waitYouArenotSupposedToExistSoIKillYou()
+            }*/
           console.log("No data level in the atom! Z= " + this.protons + " A-Z= " + this.neutrons)
+
+          setTimeout(() => {
+            if (this.protons > 2) {
+              this.dsf()
+            } else {
+              this.waitYouArenotSupposedToExistSoIKillYou()
+            }
+          }, 1)
+
           //ces ptins d'atomes qui n'existent pas me courent sur le haricot mon gras.
         }
       }
@@ -836,7 +861,7 @@ class Atom {
       ejectParticle(type, speed = 10) {
         const angle = Math.random() * Math.PI * 2;
         //juste à l'extérieur de l'atome avec un peu de sécurité
-        const distance = this.baseRadius * (1.5 + Math.random() * 0.2);
+        const distance = (this.baseRadius + PARTICLE_RADIUS + (Math.random()*2));
   
         const x = this.x + Math.cos(angle) * distance;
         const y = this.y + Math.sin(angle) * distance;
@@ -867,27 +892,28 @@ class Atom {
       }
       dsf() {
         if (this.protons + this.neutrons < 2) return;
-    
+        
         //au moins un proton par fragment stp
         if (this.protons < 2) return;
-    
+        atoms = atoms.filter(a => a !== this);
         const p1 = Math.floor(Math.random() * (this.protons - 1)) + 1;
         const p2 = this.protons - p1;
     
         const n1 = Math.floor(Math.random() * (this.neutrons + 1));
         const n2 = this.neutrons - n1;
+
+        const e1 =  Math.floor(Math.random() * (this.electronsTotal + 1));
+        const e2 = this.electronsTotal - e1
     
-        //On est parano donc on vérif quand mm (confiance en soi basse ces temps-ci ouai ouai)
         if (p1 + n1 === 0 || p2 + n2 === 0) return;
     
-        this.ejectAtom(p1, n1, p1);
-        this.ejectAtom(p2, n2, p2);
+        this.ejectAtom(p1, n1, e1);
+        this.ejectAtom(p2, n2, e2);
     
-        atoms = atoms.filter(a => a !== this);
     }
 
       disintegration() {
-        this.age = 0
+        this.age = -10
         if (!this.decayModes || this.decayModes.length === 0) {
             this.updateAll();
             return;
@@ -973,9 +999,6 @@ class Atom {
           if (this.protons <= count) { 
             atoms = atoms.filter(a => a !== this);
           }
-      } else {
-        //console.log("Unknown decay mode. Random self-fission was chosen.")
-        this.dsf();
       }
     
         this.updateAll();
@@ -1608,7 +1631,7 @@ function fuseAtoms(a, b) {
             break;
           }
   
-          if ((a instanceof Atom && b instanceof Particle) || (b instanceof Atom && a instanceof Particle)) {
+          if ((a instanceof Atom && b instanceof Particle  && a.halfLifeTooltip != "Unknown") || (b instanceof Atom && a instanceof Particle && b.halfLifeTooltip != "Unknown")) {//code sale pour ne pas faire de réaction en chaîne débilos avec création de matière
             const atom = a instanceof Atom ? a : b;
             const particle = a instanceof Particle ? a : b;
             atom.addParticle(particle);
@@ -1704,6 +1727,21 @@ function fuseAtoms(a, b) {
             a.dsf()
           })
         break;
+        case 'o':
+          let parts = []
+
+          for (let j = 0; j < 82; j++) {
+            parts.push({ type: 'p' });
+          }
+          for (let j = 0; j < 208-82; j++) {
+            parts.push({ type: 'n' });
+          }
+          for (let j = 0; j < 82; j++) {
+            parts.push({ type: 'e' });
+          }
+          let atom = new Atom(mousePos.x, mousePos.y, parts)
+          atoms.push(atom)
+        break;
     }
   })  
   window.addEventListener("keyup", e => {
@@ -1750,7 +1788,7 @@ function fuseAtoms(a, b) {
       atoms.push(atom);
     }
   }
-  createRandomAtoms(200, 118, 7500, 7500, 30)
+  //createRandomAtoms(200, 118, 7500, 7500, 30) //le bon
   //createRandomAtoms(300, 118, 100, 100, 5)
   function gameLoop() {
     if (keys['+'] || keys['=']) {
