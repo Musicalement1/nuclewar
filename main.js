@@ -861,7 +861,7 @@ class Atom {
       ejectParticle(type, speed = 10) {
         const angle = Math.random() * Math.PI * 2;
         //juste à l'extérieur de l'atome avec un peu de sécurité
-        const distance = (this.baseRadius + PARTICLE_RADIUS + (Math.random()*2));
+        const distance = (this.baseRadius + PARTICLE_RADIUS * 1.2 + (Math.random()*2));
   
         const x = this.x + Math.cos(angle) * distance;
         const y = this.y + Math.sin(angle) * distance;
@@ -1693,6 +1693,94 @@ function fuseAtoms(a, b) {
       b.vy -= fy * (ma / totalMass);
     }
   }
+
+  function checkCoulomb() {
+    const K = 600; //intensité de la force
+
+    //atome avec atome
+    for (let i = 0; i < atoms.length; i++) {
+        const a = atoms[i];
+
+        for (let j = i + 1; j < atoms.length; j++) {
+            const b = atoms[j];
+
+            if (a.charge === 0 && b.charge === 0) continue;
+
+            const dx = b.x - a.x;
+            const dy = b.y - a.y;
+            const d2 = dx * dx + dy * dy;
+
+            const minDist = (a.baseRadius + b.baseRadius) * 6;
+
+            if (d2 > minDist * minDist * 4) continue;
+
+            const d = Math.sqrt(d2);
+            if (d < 0.0001) continue;
+
+            const force = K * (a.charge * b.charge) / d2;
+
+            const fx = force * dx / d;
+            const fy = force * dy / d;
+
+            a.vx -= fx / a.mass;
+            a.vy -= fy / a.mass;
+
+            b.vx += fx / b.mass;
+            b.vy += fy / b.mass;
+        }
+    }
+
+    //atome avec part
+    for (const atom of atoms) {
+
+        for (const part of particles) {
+
+            let q = 0;
+
+            if (part.type === "p") q = 1;
+            else if (part.type === "e") q = -1;
+            else continue; //neutron
+
+            if (atom.charge === 0) continue;
+
+            const dx = part.x - atom.x;
+            const dy = part.y - atom.y;
+            const d2 = dx * dx + dy * dy;
+
+            const minDist = atom.baseRadius * 12;
+
+            if (d2 > minDist * minDist) continue;
+
+            const d = Math.sqrt(d2);
+            if (d < 0.0001) continue;
+
+            const force = K * (atom.charge * q) / d2;
+
+            const fx = force * dx / d;
+            const fy = force * dy / d;
+
+            atom.vx -= fx / atom.mass;
+            atom.vy -= fy / atom.mass;
+
+            let coef = 12//on va considérer que le proton c 12 fois lui mm parce que arcade
+
+            if (part.type == "e") {
+              coef = 12/3
+            }
+
+            part.vx += fx / coef;
+            part.vy += fy / coef;
+        }
+    }
+
+    for (const atom of atoms) {
+      if (atom.charge < -atom.valenceMax) {
+        atom.addOrRemove("e",-1)
+        atom.updateAll()
+        atom.ejectParticle("e")
+      }
+    }
+}
   
   
   
@@ -1830,8 +1918,8 @@ function fuseAtoms(a, b) {
     }
 
   }
-  createRandomAtoms(200, 118, 7500, 7500, 30) //le bon
-  createRandomParticules(200, 7500, 7500)
+  createRandomAtoms(100, 118, 3750, 3750, 30) //le bon
+  createRandomParticules(100, 3750, 3750)
   //createRandomAtoms(300, 118, 100, 100, 5)
   function gameLoop() {
     if (keys['+'] || keys['=']) {
@@ -1871,6 +1959,7 @@ function fuseAtoms(a, b) {
     drawAndUpdateAtoms();
     drawParticles();
     checkForAtoms();
+    checkCoulomb();
     resolveCollisions();
     requestAnimationFrame(gameLoop);
   }
