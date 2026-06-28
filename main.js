@@ -1714,18 +1714,24 @@ function fuseAtoms(a, b) {
         break;
         case 'm':
           atoms.forEach(a => {
-            a.disintegration()
+            if (a.isHovered()) { 
+              a.disintegration()
+            }
           })
         break;
         case 'l':
           atoms.forEach(a => {
-            a.waitYouArenotSupposedToExistSoIKillYou()
+            if (a.isHovered()) { 
+              a.waitYouArenotSupposedToExistSoIKillYou()
+            }
           })
         break;
         case 'p':
           atoms.forEach(a => {
+          if (a.isHovered()) { 
             a.dsf()
-          })
+          }
+        })
         break;
         case 'o':
           let parts = []
@@ -1788,7 +1794,44 @@ function fuseAtoms(a, b) {
       atoms.push(atom);
     }
   }
+
+  function createRandomParticules(count = 10, maxX, maxY) {
+
+    // 55% seront des éléctrons
+    // 21% des protons
+    // 21% des neutrons
+    // 1% de chaque antimatière
+
+    for (let i = 0; i < count; i++) {
+      const x  = Math.random() * maxX - maxX/2;
+      const y = Math.random() * maxY - maxY/2;
+
+      const rand = Math.random()
+
+      let type
+
+      if (rand < 0.55) {
+        type = "e"
+      } else if(rand >= 0.55 && rand < 0.76) {
+        type = "p"
+      } else if(rand >= 0.76 && rand < 0.97) {
+        type = "n"
+      } else if(rand >= 0.97 && rand < 0.98) {
+        type = "p-"
+      } else if(rand >= 0.98 && rand < 0.99) {
+        type = "n-"
+      } else {
+        type = "e+"
+      }
+
+      const particle = new Particle(x, y, type)
+
+      particles.push(particle)
+    }
+
+  }
   createRandomAtoms(200, 118, 7500, 7500, 30) //le bon
+  createRandomParticules(200, 7500, 7500)
   //createRandomAtoms(300, 118, 100, 100, 5)
   function gameLoop() {
     if (keys['+'] || keys['=']) {
