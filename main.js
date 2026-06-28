@@ -958,7 +958,7 @@ class Atom {
           this.dsf();
         }
         // β+ / β-
-        else if (chosenDecay.mode.includes("β+")) {
+        else if (chosenDecay.mode.includes("β+") || chosenDecay.mode.includes("ε") /* capture éléctronique = ß- on va dire parce que j'ai la flemme mais peut-être un jour */) {
             this.dBeta(true);
         }
         
