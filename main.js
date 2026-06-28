@@ -1788,7 +1788,7 @@ function fuseAtoms(a, b) {
       atoms.push(atom);
     }
   }
-  //createRandomAtoms(200, 118, 7500, 7500, 30) //le bon
+  createRandomAtoms(200, 118, 7500, 7500, 30) //le bon
   //createRandomAtoms(300, 118, 100, 100, 5)
   function gameLoop() {
     if (keys['+'] || keys['=']) {
