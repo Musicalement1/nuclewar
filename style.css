@@ -18,3 +18,38 @@
     height: 100%;
     cursor: crosshair;
   }
+
+  #menu {
+    position: fixed;
+    top: 25%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    text-align: center;
+    z-index: 1;
+  }
+
+  button {
+    display: block;
+    margin: 15px auto;
+    padding: 15px 30px;
+    font-size: 18px;
+    background: #bddfff;
+    color: #ca34bb;
+    border: 2px solid #bddfff;
+    border-radius: 10px;
+    cursor: pointer;
+    transition: 0.3s;
+  }
+  
+  button:hover {
+    background: #ca34bb;
+    color: black;
+    box-shadow: 0 0 10px #ca34bb;
+  }
+
+  h1 {
+    font-size: 48px;
+    margin-bottom: 30px;
+    color: #ca34bb;
+    text-shadow: 0 0 10px #ca3459;
+  }

@@ -1,5 +1,13 @@
 import {atomData} from "./nudat3data.js"
 
+const { mode, level } = window.gameState;
+
+var isSandbox = false
+if (mode === 'sandbox') {
+  isSandbox = true  
+}
+
+
 const canvas = document.getElementById('canvas');
 const ctx = canvas.getContext('2d');
 
@@ -14,6 +22,7 @@ let particles = [];
 let atoms = [];
 let camera = { x: 0, y: 0, zoom: 1 };
 let mousePos = { x: 0, y: 0 };
+var timeInGame = 0
 const PARTICLE_RADIUS = 10;
 const COMBINE_DISTANCE = 25;
 const friction = 0.9925
@@ -24,6 +33,8 @@ const borderForces = true
 //const decaySpeedFactor = 100
 const camSpeed = 20
 const maxDrawOffsetDisintegration = 3
+const debugObjects = false // Je sens que je vais oublier de mettre ça sur false...
+const abstractInitTime = 10
 const ELEMENTS = {
     1:  { name: "Hydrogen",      symbol: "H",  color: "#FFFFFF", valenceMax: 1},
     2:  { name: "Helium",        symbol: "He", color: "#FFC0CB", valenceMax: 0},
@@ -729,7 +740,7 @@ class Atom {
           }*/
 
 
-        } else {
+        } else if (timeInGame > abstractInitTime) {//C'est moche mais ça marche (abstractInitTime : temps pour le jeu de charger, ça empêche les atomes d'exploser à t0 parce que ils n'ont pas encore été initialisés et l'atome A=0 n'a pas de data parce que C'EST MÊME PAS UN ATOME)
           //this.waitYouArenotSupposedToExistSoIKillYou()
             this.halfLifeTooltip = "Unknown"
             if (this.neutrons <=0 && this.protons <= 0) {atoms.filter(a => a !== this)};
@@ -1784,6 +1795,9 @@ function fuseAtoms(a, b) {
           let atom = new Atom(mousePos.x, mousePos.y, parts)
           atoms.push(atom)
         break;
+        case 'b':
+          if (debugObjects) {console.log(JSON.stringify(atoms))};
+        break;
     }
   })  
   window.addEventListener("keyup", e => {
@@ -1866,8 +1880,12 @@ function fuseAtoms(a, b) {
     }
 
   }
-  createRandomAtoms(100, 118, 3750, 3750, 30) //le bon
-  createRandomParticules(100, 3750, 3750)
+
+  if (isSandbox) {
+    createRandomAtoms(100, 118, 3750, 3750, 30) //le bon
+    createRandomParticules(100, 3750, 3750)
+  }
+  //createRandomAtoms(2, 118, 3750, 3750, 2)
   //createRandomAtoms(300, 118, 100, 100, 5)
 
 
@@ -1887,9 +1905,36 @@ function fuseAtoms(a, b) {
     });
   }
   
+
+
+
+
+
+  /* Level loading */
+
+  function startLevel(config) {
+    atoms = config.atoms.map(atomConfig => {
+      const atom = new Atom();
+  
+      Object.assign(atom, atomConfig);
+  
+      return atom;
+    });
+  }
+  
+
+  if (mode === 'level') {
+    const config = levels[level];
+  
+    startLevel(config);
+  }
+
+
+  /* it ends here */
   
 
   function gameLoop() {
+    timeInGame++
     if (keys['+'] || keys['=']) {
         zoomAtScreenPoint(1.02, canvas.width / 2, canvas.height / 2);
       }
