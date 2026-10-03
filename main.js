@@ -20,6 +20,7 @@ const friction = 0.9925
 const distanceBetweenBondedAtomsCoef = 2//2
 const decaySpeedFactor = 1
 const realLifeTime = false
+const borderForces = true
 //const decaySpeedFactor = 100
 const camSpeed = 20
 const maxDrawOffsetDisintegration = 3
@@ -248,6 +249,9 @@ class Particle {
       this.vx = vx
       this.vy = vy
       this.electronTime = 0
+      this.playerOwned = true;
+      this.highlightType = "normal";//normal, target etc..
+      this.highlightColor = "#222"; /*  color if yes */
     }
   
     contains(x, y) {
@@ -282,7 +286,7 @@ class Particle {
           '#888';
       
         ctx.fill();
-        ctx.strokeStyle = '#222';
+        ctx.strokeStyle = this.highlightColor;
         ctx.stroke();
       
         ctx.fillStyle = (this.type === 'n') ? '#000' : '#fff';
@@ -417,7 +421,10 @@ class Atom {
         this.bonds = []
         this.age = -1
         this.updateAll();
-        this.needsToBreakBonds = false//après updateall ba ouai
+        this.needsToBreakBonds = false;//après updateall ba ouai
+        this.playerOwned = true;
+        this.highlightType = "normal";//normal, target etc..
+        this.highlightColor = "#222"; /*  color if yes */
     }
       
         
@@ -505,11 +512,13 @@ class Atom {
         }
         const randomXoffset = negativeOrPositive() * maxDrawOffsetDisintegration * Math.random() * advancement
         const randomYoffset = negativeOrPositive() * maxDrawOffsetDisintegration * Math.random() * advancement
+
+
         ctx.beginPath();
         ctx.arc(screen.x + randomXoffset, screen.y + randomYoffset, radius, 0, Math.PI * 2);
         ctx.fillStyle = this.color;
         ctx.fill();
-        ctx.strokeStyle = '#222';
+        ctx.strokeStyle = this.highlightColor;
         ctx.stroke();
 
         /*if (Number.isFinite(this.halflife) && this.halflife >= 0) {
@@ -638,67 +647,6 @@ class Atom {
           // limite arbitraire +3 électrons supplémentaires pour anion très chargé
         }/*}*/
       }
-      
-    
-      /*autoChargeRelaxation() {
-        const maxCharge = 5;
-        const ejectSpeed = 2;
-      
-        const randomUnitVector = () => {
-          const angle = Math.random() * 2 * Math.PI;
-          return { x: Math.cos(angle), y: Math.sin(angle) };
-        };
-      
-        if (this.charge > maxCharge) {
-            // Retirer un électron du noyau
-            const electronIndex = this.particles.findIndex(p => p.type === 'e');
-            if (electronIndex !== -1) {
-              this.particles.splice(electronIndex, 1); // enlever electron
-            } else {
-              console.log(`${this.name} n'a pas d'électron à expulser !`);
-              return; // pas possible d’éjecter si pas d’électron
-            }
-          
-            // Créer un électron éjecté hors de l’atome
-            const dir = randomUnitVector();
-            const x = this.x + dir.x * (this.baseRadius + 10);
-            const y = this.y + dir.y * (this.baseRadius + 10);
-            const e = new Particle(x, y, 'e');
-            e.vx = dir.x * ejectSpeed;
-            e.vy = dir.y * ejectSpeed;
-            particles.push(e);
-          
-            console.log(`${this.name} expulse un électron pour réduire sa charge.`);
-            this.updateCounts();
-            this.updateCharge();
-          }
-          
-      
-          if (this.charge < -maxCharge) {
-            // Retirer un électron de l’atome (pour réduire le surplus d’électrons)
-            const electronIndex = this.particles.findIndex(p => p.type === 'e');
-            if (electronIndex !== -1) {
-              this.particles.splice(electronIndex, 1); // enlever un électron
-            } else {
-              console.log(`${this.name} n'a pas d'électron à enlever malgré charge négative.`);
-              return; // impossible d’enlever si pas d’électron
-            }
-          
-            // Créer un positron éjecté hors de l’atome (pour compenser la charge)
-            const dir = randomUnitVector();
-            const x = this.x + dir.x * (this.baseRadius + 10);
-            const y = this.y + dir.y * (this.baseRadius + 10);
-            const positron = new Particle(x, y, 'e+');
-            positron.vx = dir.x * ejectSpeed;
-            positron.vy = dir.y * ejectSpeed;
-            particles.push(positron);
-          
-            console.log(`${this.name} expulse un positron pour réduire sa charge négative.`);
-            this.updateCounts();
-            this.updateCharge();
-          }
-          
-      }*/
 
       waitYouArenotSupposedToExistSoIKillYou() {
         atoms = atoms.filter(a => a !== this);
@@ -1921,6 +1869,26 @@ function fuseAtoms(a, b) {
   createRandomAtoms(100, 118, 3750, 3750, 30) //le bon
   createRandomParticules(100, 3750, 3750)
   //createRandomAtoms(300, 118, 100, 100, 5)
+
+
+  function applyBorderForces(x, y, force) {
+    atoms.forEach(a => {
+      // utiliser sign à la place d'un if c'est tellement magistral
+      if ((Math.abs(a.x) - x > 0) || (Math.abs(a.y) - y > 0)) {
+        a.vx -= force * Math.sign(a.x) * Math.max(0,  Math.abs(a.x) - x);
+        a.vy -= force * Math.sign(a.y) * Math.max(0,  Math.abs(a.y) - y);
+      }
+    });
+    particles.forEach(p => {
+      if ((Math.abs(p.x) - x > 0) || (Math.abs(p.y) - y > 0)) {
+        p.vx -= force * Math.sign(p.x) * Math.max(0,  Math.abs(p.x) - x);
+        p.vy -= force * Math.sign(p.y) * Math.max(0,  Math.abs(p.y) - y);
+      }
+    });
+  }
+  
+  
+
   function gameLoop() {
     if (keys['+'] || keys['=']) {
         zoomAtScreenPoint(1.02, canvas.width / 2, canvas.height / 2);
@@ -1961,6 +1929,9 @@ function fuseAtoms(a, b) {
     checkForAtoms();
     checkCoulomb();
     resolveCollisions();
+    if (borderForces) {
+      applyBorderForces(3750, 3750, 0.00225);
+    }
     requestAnimationFrame(gameLoop);
   }
   //function dirtyLoop() {
